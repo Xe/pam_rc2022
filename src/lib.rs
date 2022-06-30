@@ -50,62 +50,93 @@ pub enum PamResultCode {
     PAM_INCOMPLETE = 31,
 }
 
-#[no_mangle]
-pub extern "C" fn pam_sm_acct_mgmt(
-    _: PamHandle,
-    _: PamFlags,
-    _: c_int,
-    _: *const *const c_char,
-) -> PamResultCode {
-    PamResultCode::PAM_IGNORE
+/// PAM message styles.
+#[allow(non_camel_case_types, dead_code)]
+#[derive(Debug)]
+#[repr(C)]
+pub enum MessageStyle {
+    PAM_PROMPT_ECHO_OFF = 1,
+    PAM_PROMPT_ECHO_ON = 2,
+    PAM_ERROR_MSG = 3,
+    PAM_TEXT_INFO = 4,
 }
 
-#[no_mangle]
-pub extern "C" fn pam_sm_authenticate(
-    _: PamHandle,
-    _: PamFlags,
-    _: c_int,
-    _: *const *const c_char,
-) -> PamResultCode {
-    PamResultCode::PAM_IGNORE
+pub mod sys {
+    use super::*;
+
+    #[link(name = "pam")]
+    extern "C" {
+        pub fn pam_prompt(
+            pamh: PamHandle,
+            msg_type: MessageStyle,
+            response: *const *mut c_char,
+            fmt: *const c_char,
+            ...
+        ) -> PamResultCode;
+    }
 }
 
-#[no_mangle]
-pub extern "C" fn pam_sm_chauthtok(
-    _: PamHandle,
-    _: PamFlags,
-    _: c_int,
-    _: *const *const c_char,
-) -> PamResultCode {
-    PamResultCode::PAM_IGNORE
-}
+mod callbacks {
+    use super::*;
 
-#[no_mangle]
-pub extern "C" fn pam_sm_close_session(
-    _: PamHandle,
-    _: PamFlags,
-    _: c_int,
-    _: *const *const c_char,
-) -> PamResultCode {
-    PamResultCode::PAM_IGNORE
-}
+    #[no_mangle]
+    pub extern "C" fn pam_sm_acct_mgmt(
+        _: PamHandle,
+        _: PamFlags,
+        _: c_int,
+        _: *const *const c_char,
+    ) -> PamResultCode {
+        PamResultCode::PAM_IGNORE
+    }
 
-#[no_mangle]
-pub extern "C" fn pam_sm_open_session(
-    _: PamHandle,
-    _: PamFlags,
-    _: c_int,
-    _: *const *const c_char,
-) -> PamResultCode {
-    PamResultCode::PAM_IGNORE
-}
+    #[no_mangle]
+    pub extern "C" fn pam_sm_authenticate(
+        _: PamHandle,
+        _: PamFlags,
+        _: c_int,
+        _: *const *const c_char,
+    ) -> PamResultCode {
+        print!("hello, world");
+        PamResultCode::PAM_IGNORE
+    }
 
-#[no_mangle]
-pub extern "C" fn pam_sm_setcred(
-    _: PamHandle,
-    _: PamFlags,
-    _: c_int,
-    _: *const *const c_char,
-) -> PamResultCode {
-    PamResultCode::PAM_IGNORE
+    #[no_mangle]
+    pub extern "C" fn pam_sm_chauthtok(
+        _: PamHandle,
+        _: PamFlags,
+        _: c_int,
+        _: *const *const c_char,
+    ) -> PamResultCode {
+        PamResultCode::PAM_IGNORE
+    }
+
+    #[no_mangle]
+    pub extern "C" fn pam_sm_close_session(
+        _: PamHandle,
+        _: PamFlags,
+        _: c_int,
+        _: *const *const c_char,
+    ) -> PamResultCode {
+        PamResultCode::PAM_IGNORE
+    }
+
+    #[no_mangle]
+    pub extern "C" fn pam_sm_open_session(
+        _: PamHandle,
+        _: PamFlags,
+        _: c_int,
+        _: *const *const c_char,
+    ) -> PamResultCode {
+        PamResultCode::PAM_IGNORE
+    }
+
+    #[no_mangle]
+    pub extern "C" fn pam_sm_setcred(
+        _: PamHandle,
+        _: PamFlags,
+        _: c_int,
+        _: *const *const c_char,
+    ) -> PamResultCode {
+        PamResultCode::PAM_IGNORE
+    }
 }
