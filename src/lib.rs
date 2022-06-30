@@ -4,7 +4,7 @@ use std::{
     ptr,
 };
 
-pub type PamHandleT = *const c_uint;
+pub type PamHandle = *const c_uint;
 pub type PamFlags = c_uint;
 pub type PamResult<T> = Result<T, PamResultCode>;
 
@@ -52,7 +52,7 @@ pub enum PamResultCode {
 
 #[no_mangle]
 pub extern "C" fn pam_sm_acct_mgmt(
-    _: PamHandleT,
+    _: PamHandle,
     _: PamFlags,
     _: c_int,
     _: *const *const c_char,
@@ -62,27 +62,27 @@ pub extern "C" fn pam_sm_acct_mgmt(
 
 #[no_mangle]
 pub extern "C" fn pam_sm_authenticate(
-    _pamh: PamHandleT,
-    _flags: PamFlags,
-    _argc: c_int,
-    _argv: *const *const c_char,
+    _: PamHandle,
+    _: PamFlags,
+    _: c_int,
+    _: *const *const c_char,
 ) -> PamResultCode {
     PamResultCode::PAM_IGNORE
 }
 
 #[no_mangle]
 pub extern "C" fn pam_sm_chauthtok(
-    _pamh: PamHandleT,
-    _flags: PamFlags,
-    _argc: c_int,
-    _argv: *const *const c_char,
+    _: PamHandle,
+    _: PamFlags,
+    _: c_int,
+    _: *const *const c_char,
 ) -> PamResultCode {
     PamResultCode::PAM_IGNORE
 }
 
 #[no_mangle]
 pub extern "C" fn pam_sm_close_session(
-    _: PamHandleT,
+    _: PamHandle,
     _: PamFlags,
     _: c_int,
     _: *const *const c_char,
@@ -92,7 +92,7 @@ pub extern "C" fn pam_sm_close_session(
 
 #[no_mangle]
 pub extern "C" fn pam_sm_open_session(
-    _: PamHandleT,
+    _: PamHandle,
     _: PamFlags,
     _: c_int,
     _: *const *const c_char,
@@ -102,7 +102,7 @@ pub extern "C" fn pam_sm_open_session(
 
 #[no_mangle]
 pub extern "C" fn pam_sm_setcred(
-    _: PamHandleT,
+    _: PamHandle,
     _: PamFlags,
     _: c_int,
     _: *const *const c_char,
