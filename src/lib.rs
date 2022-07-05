@@ -61,6 +61,27 @@ pub enum MessageStyle {
     PAM_TEXT_INFO = 4,
 }
 
+/// Sends a message to the user when doing a PAM conversation.
+///
+/// This function assumes the input string has no null bytes in it.
+/// Using a string with a null byte in it will return Err(PamResultCode::PAM_BUF_ERR).
+pub fn info(pamh: PamHandle, msg: String) -> PamResult<()> {
+    let msg = CString::new(msg).map_err(|_| PamResultCode::PAM_BUF_ERR)?;
+    let result_code = unsafe {
+        sys::pam_prompt(
+            pamh,
+            MessageStyle::PAM_TEXT_INFO,
+            ptr::null::<*mut c_char>(),
+            msg.as_ptr(),
+        )
+    };
+
+    match result_code {
+        PamResultCode::PAM_SUCCESS => Ok(()),
+        _ => Err(result_code),
+    }
+}
+
 pub mod sys {
     use super::*;
 
@@ -91,13 +112,15 @@ mod callbacks {
 
     #[no_mangle]
     pub extern "C" fn pam_sm_authenticate(
-        _: PamHandle,
+        pamh: PamHandle,
         _: PamFlags,
         _: c_int,
         _: *const *const c_char,
     ) -> PamResultCode {
-        print!("hello, world");
-        PamResultCode::PAM_IGNORE
+        match info(pamh, "hello, world".into()) {
+            Ok(_) => PamResultCode::PAM_IGNORE,
+            Err(why) => why,
+        }
     }
 
     #[no_mangle]
