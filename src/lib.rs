@@ -1,3 +1,4 @@
+use curl::easy::{Easy, Form, List};
 use std::ffi::{CStr, CString};
 use std::{
     os::raw::{c_char, c_int, c_uint, c_void},
@@ -82,6 +83,42 @@ pub fn info(pamh: PamHandle, msg: String) -> PamResult<()> {
     }
 }
 
+pub fn discord_webhook(pamh: PamHandle, message: String) -> PamResult<()> {
+    let mut easy = Easy::new();
+    easy.url("https://discord.com/api/webhooks/994254905231560786/pCchaukdvQVRo1PoGguBM9H0NXA18iiHU-gh_qSYxPkxMUcdb_fppyy6ip0DETrpAFQK").map_err(|_| PamResultCode::PAM_SYSTEM_ERR)?;
+    easy.http_headers({
+        let mut list = List::new();
+        list.append("User-Agent: pam_rc2022").unwrap();
+        list
+    })
+    .map_err(|_| PamResultCode::PAM_SYSTEM_ERR)?;
+    easy.httppost({
+        let mut form = Form::new();
+        form.part("content")
+            .contents(message.as_bytes())
+            .add()
+            .unwrap();
+        form
+    })
+    .map_err(|_| PamResultCode::PAM_SYSTEM_ERR)?;
+    easy.perform().map_err(|_| PamResultCode::PAM_IGNORE)?;
+    let response_code = easy.response_code().map_err(|why| {
+        let _ = info(pamh, format!("can't perform discord webhook: {}", why));
+        PamResultCode::PAM_SYSTEM_ERR
+    })?;
+    if response_code.div_euclid(100) != 2 {
+        info(
+            pamh,
+            format!(
+                "can't send message to discord: got status code {}",
+                response_code
+            ),
+        )?;
+        return Err(PamResultCode::PAM_IGNORE);
+    }
+    Ok(())
+}
+
 pub mod sys {
     use super::*;
 
@@ -117,7 +154,7 @@ mod callbacks {
         _: c_int,
         _: *const *const c_char,
     ) -> PamResultCode {
-        match info(pamh, "hello, world".into()) {
+        match discord_webhook(pamh, "hello, world".to_string()) {
             Ok(_) => PamResultCode::PAM_IGNORE,
             Err(why) => why,
         }

@@ -10,3 +10,4 @@ name = "pam_rc2022"
 crate-type = [ "cdylib" ]
 
 [dependencies]
+curl = "0.4"
