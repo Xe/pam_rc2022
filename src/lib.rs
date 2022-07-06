@@ -83,6 +83,69 @@ pub fn info(pamh: PamHandle, msg: String) -> PamResult<()> {
     }
 }
 
+#[allow(non_camel_case_types, dead_code)]
+#[derive(Debug)]
+#[repr(C)]
+pub enum PamItemType {
+    PAM_SERVICE = 1,
+    PAM_USER = 2,
+    PAM_TTY = 3,
+    PAM_RHOST = 4,
+    PAM_CONV = 5,
+    PAM_AUTHTOK = 6,
+    PAM_OLDAUTHTOK = 7,
+    PAM_RUSER = 8,
+    PAM_USER_PROMPT = 9,
+    PAM_FAIL_DELAY = 10,
+    PAM_XDISPLAY = 11,
+    PAM_XAUTHDATA = 12,
+    PAM_AUTHTOK_TYPE = 13,
+}
+
+fn get_item(pamh: PamHandle, item_type: PamItemType) -> PamResult<*const c_void> {
+    let mut raw_item: *const c_void = ptr::null();
+    let r = unsafe { sys::pam_get_item(pamh, item_type, &mut raw_item) };
+    if raw_item.is_null() {
+        Err(r)
+    } else {
+        Ok(raw_item)
+    }
+}
+
+/// Gets the username that is currently authenticating out of the pam handle.
+///
+/// # Safety
+///
+/// This casts the string directly from C space into Rust space. It relies on
+/// PAM doing things properly. Invalid UTF-8 will be pruned from the result.
+pub fn get_user(pamh: PamHandle) -> PamResult<String> {
+    get_item(pamh, PamItemType::PAM_USER).map(|u| unsafe {
+        CStr::from_ptr(u as *const i8)
+            .to_string_lossy()
+            .into_owned()
+    })
+}
+
+/// Gets the remote host out of the pam handle.
+///
+/// # Safety
+///
+/// This casts the string directly from C space into Rust space. It relies on
+/// PAM doing things properly. Invalid UTF-8 will be pruned from the result.
+pub fn get_rhost(pamh: PamHandle) -> PamResult<String> {
+    let result = get_item(pamh, PamItemType::PAM_RHOST).map(|u| unsafe {
+        CStr::from_ptr(u as *const i8)
+            .to_string_lossy()
+            .into_owned()
+    })?;
+
+    if result == "".to_string() {
+        return Ok("<unknown>".into());
+    }
+
+    Ok(result)
+}
+
 pub fn discord_webhook(pamh: PamHandle, message: String) -> PamResult<()> {
     let mut easy = Easy::new();
     easy.url("https://discord.com/api/webhooks/994254905231560786/pCchaukdvQVRo1PoGguBM9H0NXA18iiHU-gh_qSYxPkxMUcdb_fppyy6ip0DETrpAFQK").map_err(|_| PamResultCode::PAM_SYSTEM_ERR)?;
@@ -131,7 +194,21 @@ pub mod sys {
             fmt: *const c_char,
             ...
         ) -> PamResultCode;
+        pub fn pam_get_item(
+            pamh: PamHandle,
+            item_type: PamItemType,
+            item: *mut *const c_void,
+        ) -> PamResultCode;
     }
+}
+
+pub fn login_message(pamh: PamHandle) -> PamResult<()> {
+    discord_webhook(
+        pamh,
+        format!("{} logging in from {}", get_user(pamh)?, get_rhost(pamh)?),
+    )?;
+
+    Ok(())
 }
 
 mod callbacks {
@@ -154,7 +231,7 @@ mod callbacks {
         _: c_int,
         _: *const *const c_char,
     ) -> PamResultCode {
-        match discord_webhook(pamh, "hello, world".to_string()) {
+        match login_message(pamh) {
             Ok(_) => PamResultCode::PAM_IGNORE,
             Err(why) => why,
         }
