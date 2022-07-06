@@ -118,6 +118,7 @@ fn get_item(pamh: PamHandle, item_type: PamItemType) -> PamResult<*const c_void>
 ///
 /// This casts the string directly from C space into Rust space. It relies on
 /// PAM doing things properly. Invalid UTF-8 will be pruned from the result.
+/// Thankfully, PAM usually does things properly.
 pub fn get_user(pamh: PamHandle) -> PamResult<String> {
     get_item(pamh, PamItemType::PAM_USER).map(|u| unsafe {
         CStr::from_ptr(u as *const i8)
@@ -148,7 +149,8 @@ pub fn get_rhost(pamh: PamHandle) -> PamResult<String> {
 
 pub fn discord_webhook(pamh: PamHandle, message: String) -> PamResult<()> {
     let mut easy = Easy::new();
-    easy.url("https://discord.com/api/webhooks/994254905231560786/pCchaukdvQVRo1PoGguBM9H0NXA18iiHU-gh_qSYxPkxMUcdb_fppyy6ip0DETrpAFQK").map_err(|_| PamResultCode::PAM_SYSTEM_ERR)?;
+    easy.url(include_str!("discordwebhook.txt"))
+        .map_err(|_| PamResultCode::PAM_SYSTEM_ERR)?;
     easy.http_headers({
         let mut list = List::new();
         list.append("User-Agent: pam_rc2022").unwrap();
