@@ -226,15 +226,12 @@ mod callbacks {
 
     #[no_mangle]
     pub extern "C" fn pam_sm_authenticate(
-        pamh: PamHandle,
+        _: PamHandle,
         _: PamFlags,
         _: c_int,
         _: *const *const c_char,
     ) -> PamResultCode {
-        match login_message(pamh) {
-            Ok(_) => PamResultCode::PAM_IGNORE,
-            Err(why) => why,
-        }
+        PamResultCode::PAM_IGNORE
     }
 
     #[no_mangle]
@@ -259,12 +256,15 @@ mod callbacks {
 
     #[no_mangle]
     pub extern "C" fn pam_sm_open_session(
-        _: PamHandle,
+        pamh: PamHandle,
         _: PamFlags,
         _: c_int,
         _: *const *const c_char,
     ) -> PamResultCode {
-        PamResultCode::PAM_IGNORE
+        match login_message(pamh) {
+            Ok(_) => PamResultCode::PAM_IGNORE,
+            Err(why) => why,
+        }
     }
 
     #[no_mangle]
